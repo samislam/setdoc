@@ -2,7 +2,7 @@
 
 # Examples:
 
-### or as an ExpressJs Middleware
+### as an ExpressJs Middleware
 
 ```js
 /*=============================================
