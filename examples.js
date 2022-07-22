@@ -52,3 +52,48 @@ app.get(
     // ]
   }
 )
+
+app.get(
+  '/channels/:channelId',
+  setDocMw(UserModel.find({}), (req) => ({
+    post(doc) {
+      console.log(doc)
+      // {
+      //   name: 'Kids Playhouse!',
+      //   email: 'kids@kidi.com',
+      //   subscribers: [
+      //     {
+      //       id: 1,
+      //       name: 'Murat',
+      //     },
+      //     {
+      //       id: 2,
+      //       name: 'Omer',
+      //     },
+      //     {
+      //       id: 3,
+      //       name: 'Yaser',
+      //     },
+      //   ]
+      // }
+      return doc.subscribers
+    },
+  })),
+  (req, res, next) => {
+    console.log(req.mainDocs)
+    // [
+    //   {
+    //     id: 1,
+    //     name: 'Murat',
+    //   },
+    //   {
+    //     id: 2,
+    //     name: 'Omer',
+    //   },
+    //   {
+    //     id: 3,
+    //     name: 'Yaser',
+    //   },
+    // ]
+  }
+)

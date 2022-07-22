@@ -102,7 +102,56 @@ an ExpressJs middleware, queries your database and fetches the data, then sets t
   - if this property is set, the properties `ifSinglePropName` and `ifMultiPropName` are ignored.
 - `ifSinglePropName`: _string_, the property name to set on the request object if the response from the database was a single value (i.e, object for example, not an array) (default : 'mainDoc').
 - `ifMultiPropName`: _string_, the property name to set on the request object if the response from the database was an array (default: 'mainDocs').
-- `handleError`: _boolean_, send a _setDoc_404_error_ if the database query returns undefined, if set to false, `next()` is called with the error (default: `true`)
+- `handleError`: _boolean_, send a _setDoc_notFound_error_ if the database query returns undefined, if set to false, `next()` is called with the error (default: `true`)
+- `post`: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ the querying the database and verifying weither the resource was found or not.
+  - this method is pretty useful when you want to _transform_ the database response, ex:
+
+```js
+app.get(
+  '/channels/:channelId',
+  setDocMw(UserModel.find({}), (req) => ({
+    post(doc) {
+      console.log(doc)
+      // {
+      //   name: 'Kids Playhouse!',
+      //   email: 'kids@kidi.com',
+      //   subscribers: [
+      //     {
+      //       id: 1,
+      //       name: 'Murat',
+      //     },
+      //     {
+      //       id: 2,
+      //       name: 'Omer',
+      //     },
+      //     {
+      //       id: 3,
+      //       name: 'Yaser',
+      //     },
+      //   ]
+      // }
+      return doc.subscribers
+    },
+  })),
+  (req, res, next) => {
+    console.log(req.mainDocs)
+    // [
+    //   {
+    //     id: 1,
+    //     name: 'Murat',
+    //   },
+    //   {
+    //     id: 2,
+    //     name: 'Omer',
+    //   },
+    //   {
+    //     id: 3,
+    //     name: 'Yaser',
+    //   },
+    // ]
+  }
+)
+```
 
 # `globalOptions`
 
@@ -115,6 +164,7 @@ This one is an object, which has the following properties:
 - `ifSinglePropName`: 'mainDoc',
 - `ifMultiPropName`: 'mainDocs',
 - `handleError`: true,
+- `post`: (doc) => doc
 
 You can use this object to overwrite the default properties used internally within setDoc from here.
 remember to modify these if you wanted to (**globally**) before running any other setDoc functions.
@@ -136,7 +186,7 @@ There's only one error that setDoc can throw, it's the error when a document is 
 
 To handle the error, the error has the following properties:
 
-- `name`: 'setDoc_404_error'
+- `name`: 'setDoc_notFound_error'
 - `message`: the message chosen when the database query returns undefined, (default _"The resource you requested was not found"_).
 - `statusCode`: the status code chosen when the database query returns undefined (default: _404_).
 - `stack`: the call stack for the error.
@@ -149,7 +199,7 @@ try {
 } catch (error) {
   console.log(error)
   //   {
-  //     name: 'setDoc_404_error',
+  //     name: 'setDoc_notFound_error',
   //     message: "The resource you requested was not found"
   //     statusCode: 404,
   //     stack: ...the error stack
@@ -180,7 +230,7 @@ app.get(
 )
 
 app.use((err, req, res, next) => {
-  if (err.name === 'setDoc_404_error') {
+  if (err.name === 'setDoc_notFound_error') {
     res.status(err.statusCode).json({
       status: 'fail',
       message: err.message,

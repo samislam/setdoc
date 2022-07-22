@@ -30,8 +30,10 @@ app.get(
 
 app.get(
   '/users/:id',
-  setDocMw((req) => UserModel.findById(req.params.id), { ifSinglePropName: 'doc', handleError: false }),
-  sendResMw(200, (req) => ({ data: req.doc }))
+  setDocMw((req) => UserModel.findById(req.params.id), { ifSinglePropName: 'doc', handleError: false, post(doc){
+    return doc.subscribers
+  } }),
+  sendResMw(200, (req) => ({ data: req.documents }))
 )
 
 // app.get('/users', (req, res, next) => {
@@ -51,12 +53,19 @@ app.get(
 
 app.use((err, req, res, next) => {
   console.log('caught')
-  if (err.name === 'setDoc_404_error') {
+  if (err.name === 'setDoc_notFound_error') {
     sendRes(err.statusCode, res, { message: err.message, foru2makesure: 'hi' })
-  }
+  } else console.log(err)
 })
 
 console.clear()
 
-mongoose.connect('mongodb://localhost/tests', () => log.success(log.label, 'successfully connected to database'))
-app.listen(9977, () => log.info(log.label, 'Test running on port 9977...'))
+function main() {
+  log.info(log.label, 'connecting to the databsae...')
+  mongoose.connect('mongodb://localhost:27017/tests').then(() => {
+    log.success(log.label, 'successfully connected to database')
+    log.info(log.label, 'starting the http service...')
+    app.listen(9977, () => log.info(log.label, 'Test running on port 9977...'))
+  })
+}
+main()

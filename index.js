@@ -25,6 +25,9 @@ const globalOptions = {
   ifSinglePropName: 'mainDoc',
   ifMultiPropName: 'mainDocs',
   handleError: true,
+  post(doc) {
+    return doc
+  },
 }
 
 function setDocMw(query, options) {
@@ -44,6 +47,7 @@ function setDocMw(query, options) {
       ifSinglePropName: globalOptions.ifSinglePropName,
       ifMultiPropName: globalOptions.ifMultiPropName,
       handleError: globalOptions.handleError,
+      post: globalOptions.post,
     }
     _.merge(chosenOptions, defaultOptions, optionsValue)
     // working with the main code -----
@@ -51,12 +55,15 @@ function setDocMw(query, options) {
 
     if (!dbRes && chosenOptions.notFoundErr) {
       if (chosenOptions.handleError) return sendErr(res, chosenOptions.notFoundStatusCode, chosenOptions.notFoundMsg)
-      else return next(new AppError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode, 'setDoc_404_error'))
+      else return next(new AppError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode, 'setDoc_notFound_error'))
     }
-    if (chosenOptions.propName) req[chosenOptions.propName] = dbRes
+
+    const postDoc = await chosenOptions.post(dbRes)
+
+    if (chosenOptions.propName) req[chosenOptions.propName] = postDoc
     else {
-      if (checkTypes.isArray(dbRes)) req[chosenOptions.ifMultiPropName] = dbRes
-      else req[chosenOptions.ifSinglePropName] = dbRes
+      if (checkTypes.isArray(postDoc)) req[chosenOptions.ifMultiPropName] = postDoc
+      else req[chosenOptions.ifSinglePropName] = postDoc
     }
     return next()
   })
@@ -76,7 +83,7 @@ async function setDoc(query, options) {
   _.merge(chosenOptions, defaultOptions, options)
   // working with the main code -----
   const dbRes = await queryValue
-  if (!dbRes && chosenOptions.notFoundErr) throw new AppError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode, 'setDoc_404_error')
+  if (!dbRes && chosenOptions.notFoundErr) throw new AppError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode, 'setDoc_notFound_error')
   else return dbRes
 }
 
