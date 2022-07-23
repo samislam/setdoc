@@ -17,17 +17,10 @@ function sendErr(res, statusCode, message) {
 
 const getValue = async (parameter, ...args) => (checkTypes.isAsycOrSyncFunc(parameter) ? await parameter(...args) : parameter)
 
-const globalOptions = {
+const sharedOptions = {
   notFoundMsg: 'The resource you requested was not found',
   notFoundStatusCode: 404,
   notFoundErr: true,
-  propName: undefined,
-  ifSinglePropName: 'mainDoc',
-  ifMultiPropName: 'mainDocs',
-  handleError: true,
-  post(doc) {
-    return doc
-  },
 }
 
 function setDocMw(query, options) {
@@ -40,14 +33,14 @@ function setDocMw(query, options) {
     // working with the options -----
     const chosenOptions = {}
     const defaultOptions = {
-      notFoundErr: globalOptions.notFoundErr,
-      notFoundMsg: globalOptions.notFoundMsg,
-      notFoundStatusCode: globalOptions.notFoundStatusCode,
-      propName: globalOptions.propName,
-      ifSinglePropName: globalOptions.ifSinglePropName,
-      ifMultiPropName: globalOptions.ifMultiPropName,
-      handleError: globalOptions.handleError,
-      post: globalOptions.post,
+      ...sharedOptions,
+      propName: undefined,
+      ifSinglePropName: 'mainDoc',
+      ifMultiPropName: 'mainDocs',
+      handleError: true,
+      post(doc) {
+        return doc
+      },
     }
     _.merge(chosenOptions, defaultOptions, optionsValue)
     // working with the main code -----
@@ -75,11 +68,7 @@ async function setDoc(query, options) {
   const queryValue = await getValue(query)
   // working with the options -----
   const chosenOptions = {}
-  const defaultOptions = {
-    notFoundErr: globalOptions.notFoundErr,
-    notFoundMsg: globalOptions.notFoundMsg,
-    notFoundStatusCode: globalOptions.notFoundStatusCode,
-  }
+  const defaultOptions = sharedOptions
   _.merge(chosenOptions, defaultOptions, options)
   // working with the main code -----
   const dbRes = await queryValue
@@ -90,7 +79,6 @@ async function setDoc(query, options) {
 /*----------  end of code, exporting  ----------*/
 
 module.exports = {
-  globalOptions,
   setDocMw,
   setDoc,
 }
