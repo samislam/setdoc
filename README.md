@@ -1,4 +1,4 @@
-**setDoc** is a small and simple utility for fetching data from the database using Mongoose.
+**setDoc** is a small and simple utility for querying your database with Mongoose.
 
 # Quick Overview 🍇:
 

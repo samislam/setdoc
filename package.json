@@ -1,7 +1,7 @@
 {
   "name": "setdoc",
-  "version": "3.0.0",
-  "description": "setDoc is a small and simple utility for fetching data from the database using Mongoose.",
+  "version": "3.0.1",
+  "description": "setDoc is a small and simple utility for querying your database with Mongoose.",
   "main": "./src/index.js",
   "scripts": {
     "test": "nodemon -q ./tests/index.js"
