@@ -1,3 +1,5 @@
 # directories
 node_modules/
+# files
 package-lock.json
+draft.md

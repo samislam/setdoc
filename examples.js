@@ -1,99 +1,44 @@
-/*=============================================
-=            as a regular JavaScript function            =
-=============================================*/
-let users
-users = await setDoc(User.findById(req.params.id))
-users = await setDoc(User.findById(req.params.id), { notFoundMsg: "Couldn't find that record" })
+const express = require('express')
+const expressAsyncHandler = require('express-async-handler')
+const app = express()
+const { customSetDoc, customSetDocMw, customSendDocMw, SetDoc, SetDocMw, SendDocMw } = require('setDoc')
+const { UserModel } = require('./models/UserModel')
 
-/*=============================================
-=            as an ExpressJs Middleware            =
-=============================================*/
+app.use(express.json())
 
-app.get(
-  '/users',
-  setDocMw((req) => req.$loggedInUser.model.find({}), { propName: '$users' }),
+const customSetDoc = new SetDoc({
+  notFoundMsg: 'Entschuldigung, aber der angeforderte Datensatz wurde nicht gefunden!',
+  notFoundStatusCode: 500,
+})
+const customSetDocMw = new SetDocMw({
+  notFoundMsg: 'üzgünüm, ancak istenen kayıt bulunamadı!',
+})
+const customSendDocMw = new SendDocMw({
+  notFoundMsg: 'prepáčte, ale požadovaný záznam sa nenašiel!',
+})
+
+app.route('/api/users').get(
+  customSetDocMw((req) => UserModel.find({}, { propName: 'docs' })),
   (req, res, next) => {
-    console.log(req.$users)
-    // [
-    //   {
-    //     id: 1,
-    //     name: 'Murat',
-    //   },
-    //   {
-    //     id: 2,
-    //     name: 'Omer',
-    //   },
-    //   {
-    //     id: 3,
-    //     name: 'Yaser',
-    //   },
-    // ]
+    res.status(200).json({ data: req.docs })
   }
 )
-
-app.get(
-  '/users',
-  setDocMw(UserModel.find({}), (req) => ({ ifMultiPropName: '$users' })),
-  (req, res, next) => {
-    console.log(req.$users)
-    // [
-    //   {
-    //     id: 1,
-    //     name: 'Murat',
-    //   },
-    //   {
-    //     id: 2,
-    //     name: 'Omer',
-    //   },
-    //   {
-    //     id: 3,
-    //     name: 'Yaser',
-    //   },
-    // ]
+app
+  .route('/api/users/:id')
+  .get(customSendDocMw((req) => UserModel.findById(req.params.id)))
+  .patch(
+    expressAsyncHandler(async (req, res, next) => {
+      const doc = await customSetDoc(() => UserModel.findByIdAndUpdate(req.params.id, req.body))
+      res.status(200).json({
+        data: doc,
+      })
+    })
+  )
+app.use((err, req, res, next) => {
+  if (err.name === 'setDocNotFoundError') {
+    res.status(err.statusCode).json({
+      message: err.message,
+    })
   }
-)
-
-app.get(
-  '/channels/:channelId',
-  setDocMw(UserModel.find({}), (req) => ({
-    post(doc) {
-      console.log(doc)
-      // {
-      //   name: 'Kids Playhouse!',
-      //   email: 'kids@kidi.com',
-      //   subscribers: [
-      //     {
-      //       id: 1,
-      //       name: 'Murat',
-      //     },
-      //     {
-      //       id: 2,
-      //       name: 'Omer',
-      //     },
-      //     {
-      //       id: 3,
-      //       name: 'Yaser',
-      //     },
-      //   ]
-      // }
-      return doc.subscribers
-    },
-  })),
-  (req, res, next) => {
-    console.log(req.mainDocs)
-    // [
-    //   {
-    //     id: 1,
-    //     name: 'Murat',
-    //   },
-    //   {
-    //     id: 2,
-    //     name: 'Omer',
-    //   },
-    //   {
-    //     id: 3,
-    //     name: 'Yaser',
-    //   },
-    // ]
-  }
-)
+})
+app.listen(3000, () => console.log('listening on port 3000...'))

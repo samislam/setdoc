@@ -5,58 +5,48 @@ const express = require('express')
 const log = require('@samislam/log')
 const expressAsyncHandler = require('express-async-handler')
 const factory = require('mmhf')
-const { setDoc, setDocMw, globalOptions } = require('./..')
 const { sendRes, sendResMw } = require('@samislam/sendres')
 const { UserModel } = require('./mongoose_models')
 const { default: mongoose } = require('mongoose')
+const { setDoc, setDocMw, sendDocMw, SetDoc, SetDocMw, SendDocMw } = require('./../src')
 /*=====  End of importing dependencies  ======*/
-
-globalOptions.notFoundMsg = 'Die gesuchte Ressource konnte nicht gefunden werden'
-globalOptions.ifMultiPropName = 'documents'
 
 const app = express()
 app.use(express.json())
 
-app.post(
-  '/users',
-  factory.createOne(UserModel, (req) => req.body)
-)
+const setDocMwNew = new SetDocMw({
+  notFoundMsg: 'ooh, boy, nothing was found!',
+}).method
 
-app.get(
-  '/users',
-  setDocMw(() => UserModel.find({}), {}),
-  sendResMw(200, (req) => ({ $$data: req.documents }))
-)
+const router = express.Router()
 
-app.get(
-  '/users/:id',
-  setDocMw((req) => UserModel.findById(req.params.id), { ifSinglePropName: 'doc', handleError: false, post(doc){
-    return doc.subscribers
-  } }),
-  sendResMw(200, (req) => ({ data: req.documents }))
-)
+app.use('/api/users', router)
 
-// app.get('/users', (req, res, next) => {
-//   const docs = setDoc(() => UserModel.find({}), {})
-//   sendRes(200, res, { $$data: docs })
-// })
-
-// app.get('/users/:id', async (req, res, next) => {
-//   try {
-//     const doc = await setDoc(() => UserModel.findById(req.params.id))
-//     sendRes(200, res, { data: doc })
-//   } catch (error) {
-//     console.log(error.stack)
-//     sendRes(error.statusCode, res, { message: error.message })
-//   }
-// })
+router.route('/').get(sendDocMw(() => UserModel.find()))
+router
+  .route('/:id')
+  .get(sendDocMw((req) => UserModel.findById(req.params.id)))
+  .patch(
+    setDocMwNew((req) => UserModel.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })),
+    sendResMw(200, (req) => ({ data: req.mainDoc }))
+  )
+  .delete(
+    expressAsyncHandler(async (req, res, next) => {
+      const doc = await setDoc(() => UserModel.findByIdAndDelete(req.params.id))
+      sendRes(204, res, { data: null })
+    })
+  )
 
 app.use((err, req, res, next) => {
   console.log('caught')
-  if (err.name === 'setDoc_notFound_error') {
+  if (err.name === 'setDocNotFoundError') {
     sendRes(err.statusCode, res, { message: err.message, foru2makesure: 'hi' })
   } else console.log(err)
 })
+
+/*=============================================
+=            framework stuff            =
+=============================================*/
 
 console.clear()
 
@@ -69,3 +59,5 @@ function main() {
   })
 }
 main()
+
+/*=====  End of framework stuff  ======*/

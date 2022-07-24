@@ -1,9 +1,9 @@
 class AppError extends Error {
-  constructor(message, statusCode, errName) {
+  constructor(message, statusCode) {
     super(message)
 
+    this.name = 'setDocNotFoundError'
     this.statusCode = statusCode
-    this.name = errName
 
     Error.captureStackTrace(this, this.constructor)
   }
