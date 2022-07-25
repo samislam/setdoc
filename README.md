@@ -137,8 +137,8 @@ a JavaScript function, queries your database, then returns the resolved value of
   - Your function will be called without any arguments.
   - Your function must return a mongoose query, ex: `()=> UserModel.findById(req.params.id)`.
 - `options`: _object_, options to configure how setDoc works.
-  - **notFoundErr**: _boolean_, throw an error when the database query returns undefined (default: **true**).
-    - a _not found document_ is only considered not found if they query returned undefined.
+  - **notFoundErr**: _boolean_, throw an error when the database query returns null (default: **true**).
+    - a _not found document_ is only considered not found if they query returned null.
   - **notFoundMsg**: _any_, the message to display in the error when a requested document is not found (default: \*"**The resource you requested was not found"\***).
   - **notFoundStatusCode**: _number_, the status code in the error to have when a document is not found (default: **404**).
 
@@ -154,10 +154,10 @@ an ExpressJs middleware, queries your database, then sets the resolved value of 
 - **options:** *object |* _function_, options to configure how setDocMw works.
   - If you provided a function, your function will be called with the `req` object.
   - Your function must return an object, ex: `(req) => ({ options-here })`.
-    - **notFoundErr**: _boolean_, consider it an error when the database query returns undefined (default: **true**).
-      - a _not found document_ is only considered not found if the resolved value of the query was undefined.
-    - **notFoundMsg**: _any_, the message to display in the error when the database query returns undefined (default: _"**The resource you requested was not found**"_).
-    - **notFoundStatusCode**: _number_, the status code to have in the error when the database query returns undefined (default: **404**).
+    - **notFoundErr**: _boolean_, consider it an error when the database query returns null (default: **true**).
+      - a _not found document_ is only considered not found if the resolved value of the query was null.
+    - **notFoundMsg**: _any_, the message to display in the error when the database query returns null (default: _"**The resource you requested was not found**"_).
+    - **notFoundStatusCode**: _number_, the status code to have in the error when the database query returns null (default: **404**).
     - **handleNotFoundError**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
     - **callNext**: _boolean_,call `next()` as the last step.
       - set to **true** only if you have middlewares to execute after this one.
@@ -181,10 +181,10 @@ an ExpressJs middleware, queries your database, then sends the resolved value of
 - **options:** *object |* _function_, options to configure how setDocMw works.
   - If you provided a function, your function will be called with the `req` object.
   - Your function must return an object, ex: `(req) => ({ options-here })`.
-    - **notFoundErr**: _boolean_, consider it an error when the database query returns undefined (default: **true**).
-      - a _not found document_ is only considered not found if the resolved value of the query was undefined.
-    - **notFoundMsg**: _any_, the message to display in the error when the database query returns undefined (default: _"**The resource you requested was not found**"_).
-    - **notFoundStatusCode**: _number_, the status code to have in the error when the database query returns undefined (default: **404**).
+    - **notFoundErr**: _boolean_, consider it an error when the database query returns null (default: **true**).
+      - a _not found document_ is only considered not found if the resolved value of the query was null.
+    - **notFoundMsg**: _any_, the message to display in the error when the database query returns null (default: _"**The resource you requested was not found**"_).
+    - **notFoundStatusCode**: _number_, the status code to have in the error when the database query returns null (default: **404**).
     - **handleNotFoundError**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
     - **callNext**: _boolean_,call `next()` as the last step.
       - set to **true** only if you have middlewares to execute after this one.
@@ -263,7 +263,7 @@ To handle the error, the error has the following properties:
 
 - `name`: **setDocNotFoundError**.
 - `message`: (default _"**The resource you requested was not found**"_).
-- `statusCode`: the status code chosen when the database query returns undefined (default: **404**).
+- `statusCode`: the status code chosen when the database query returns null (default: **404**).
 - `stack`: the call stack for the error.
 
 For example, if you want to handle a setDoc() function not found error:

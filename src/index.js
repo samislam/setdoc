@@ -107,7 +107,7 @@ class SendDocMw {
       _.merge(chosenOptions, defaultOptions, this.options, options)
       // working with the main code -----
       const dbRes = await queryValue
-      if (checkTypes.isUndefined(dbRes) && chosenOptions.notFoundErr) {
+      if (checkTypes.isNull(dbRes) && chosenOptions.notFoundErr) {
         if (chosenOptions.handleNotFoundError) return sendRes(chosenOptions.notFoundStatusCode, res, { message: chosenOptions.notFoundMsg })
         else return next(new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode))
       }
