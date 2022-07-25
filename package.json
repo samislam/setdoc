@@ -1,6 +1,6 @@
 {
   "name": "setdoc",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "setDoc is a small and simple utility for querying your database with Mongoose.",
   "main": "./src/index.js",
   "scripts": {
