@@ -35,7 +35,8 @@ class SetDoc {
     const dbRes = await preQuery
     if (!dbRes && chosenOptions.notFoundErr) throw new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode)
     // & post doc hook -----
-    const postDoc = (await chosenOptions.post(dbRes)) || dbRes
+    let postDoc = await chosenOptions.post(dbRes)
+    postDoc = checkTypes.isUndefined(postDoc) ? dbRes : postDoc
     return postDoc
   }
 }
@@ -74,7 +75,8 @@ class SetDocMw {
         else return next(new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode))
       }
       // & post doc hook -----
-      const postDoc = (await chosenOptions.post(dbRes)) || dbRes
+      let postDoc = await chosenOptions.post(dbRes)
+      postDoc = checkTypes.isUndefined(postDoc) ? dbRes : postDoc
       if (chosenOptions.propName) req[chosenOptions.propName] = postDoc
       else {
         if (checkTypes.isArray(postDoc)) req[chosenOptions.ifMultiPropName] = postDoc
@@ -118,7 +120,8 @@ class SendDocMw {
         else return next(new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode))
       }
       // & post doc hook -----
-      const postDoc = (await chosenOptions.post(dbRes)) || dbRes
+      let postDoc = await chosenOptions.post(dbRes)
+      postDoc = checkTypes.isUndefined(postDoc) ? dbRes : postDoc
       sendRes(chosenOptions.statusCode, res, chosenOptions.resBody(postDoc), chosenOptions.sendRes)
       if (chosenOptions.callNext) next()
     })
