@@ -4,7 +4,6 @@
 const express = require('express')
 const log = require('@samislam/log')
 const expressAsyncHandler = require('express-async-handler')
-const factory = require('mmhf')
 const { sendRes, sendResMw } = require('@samislam/sendres')
 const { UserModel } = require('./mongoose_models')
 const { default: mongoose } = require('mongoose')
@@ -22,7 +21,14 @@ const router = express.Router()
 
 app.use('/api/users', router)
 
-router.route('/').get(sendDocMw(() => UserModel.find()))
+router
+  .route('/')
+  .post(
+    setDocMw((req) => UserModel.create(req.body)),
+    sendResMw(201, (req) => ({ data: req.mainDoc }))
+  )
+  .get(sendDocMw(() => UserModel.find()))
+
 router
   .route('/:id')
   .get(sendDocMw((req) => UserModel.findById(req.params.id)))
