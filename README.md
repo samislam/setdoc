@@ -141,6 +141,11 @@ a JavaScript function, queries your database, then returns the resolved value of
     - a _not found document_ is only considered not found if they query returned null.
   - **notFoundMsg**: _any_, the message to display in the error when a requested document is not found (default: \*"**The resource you requested was not found"\***).
   - **notFoundStatusCode**: _number_, the status code in the error to have when a document is not found (default: **404**).
+  - **pre**: _function_, a pre hook (i.e. a function, aka. life-time method) to be executed _before_ querying the database.
+    - This method is useful when you want to call some mongoose methods for sorting, paginating, populating, or reading the query string parameters.
+  - **post**: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ querying the database and verifying weather the resource was found or not.
+    - This function gets called with the resolved value of the query.
+    - This method is pretty useful when you want to _transform_ the database response.
 
 # `setDocMw(query: function , options: object | function)`: express middleware
 
@@ -158,10 +163,12 @@ an ExpressJs middleware, queries your database, then sets the resolved value of 
       - a _not found document_ is only considered not found if the resolved value of the query was null.
     - **notFoundMsg**: _any_, the message to display in the error when the database query returns null (default: _"**The resource you requested was not found**"_).
     - **notFoundStatusCode**: _number_, the status code to have in the error when the database query returns null (default: **404**).
-    - **handleNotFoundError**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
+    - **handleNotFoundErr**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
     - **callNext**: _boolean_,call `next()` as the last step.
       - set to **true** only if you have middlewares to execute after this one.
-    - **post**: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ the querying the database and verifying weather the resource was found or not.
+    - **pre**: _function_, a pre hook (i.e. a function, aka. life-time method) to be executed _before_ querying the database.
+      - This method is useful when you want to call some mongoose methods for sorting, paginating, populating, or reading the query string parameters.
+    - **post**: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ querying the database and verifying weather the resource was found or not.
       - This function gets called with the resolved value of the query.
       - This method is pretty useful when you want to _transform_ the database response.
     - **propName**: _string_, the property name to set on the request object (default: **undefined**).
@@ -185,14 +192,16 @@ an ExpressJs middleware, queries your database, then sends the resolved value of
       - a _not found document_ is only considered not found if the resolved value of the query was null.
     - **notFoundMsg**: _any_, the message to display in the error when the database query returns null (default: _"**The resource you requested was not found**"_).
     - **notFoundStatusCode**: _number_, the status code to have in the error when the database query returns null (default: **404**).
-    - **handleNotFoundError**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
+    - **handleNotFoundErr**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
     - **callNext**: _boolean_,call `next()` as the last step.
       - set to **true** only if you have middlewares to execute after this one.
-    - **post**: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ the querying the database and verifying weather the resource was found or not.
+    - **pre**: _function_, a pre hook (i.e. a function, aka. life-time method) to be executed _before_ querying the database.
+      - This method is useful when you want to call some mongoose methods for sorting, paginating, populating, or reading the query string parameters.
+    - **post**: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ querying the database and verifying weather the resource was found or not.
       - This function gets called with the resolved value of the query.
       - This method is pretty useful when you want to _transform_ the database response.
     - **statusCode**: _number_, the status code for the response on the success of the operation (default **200**).
-    - **response**: _function_, a function that gets called with the return value of your _post hook_, if you're not specifying a _post hook_, it will be called with the resolved value of the database query.
+    - **resBody**: _function_, a function that gets called with the return value of your _post hook_, if you're not specifying a _post hook_, it will be called with the resolved value of the database query.
     - **sendRes**: _object_, the options you want to pass to the sendRes package, for these options, read them on the official docs of [sendRes](https://www.npmjs.com/package/@samislam/sendres).
 
 # `SetDoc`, `SetDocMw` and `SendDocMw` classes

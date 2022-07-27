@@ -1,44 +1,62 @@
 /*=============================================
 =            importing dependencies            =
 =============================================*/
-const _ = require('lodash')
-const expressAsyncHandler = require('express-async-handler')
+const getValue = require('./utils/getValue')
 const checkTypes = require('@samislam/checktypes')
 const { sendRes } = require('@samislam/sendres')
-const getValue = require('./utils/getValue')
 const NotFoundError = require('./utils/NotFoundError')
+const getChosenOptions = require('./utils/getChosenOptions')
+const expressAsyncHandler = require('express-async-handler')
 /*=====  End of importing dependencies  ======*/
 
 const notFoundDefaultMsg = 'The resource you requested was not found'
 
 class SetDoc {
-  constructor(options = {}) {
+  constructor(options) {
+    // @param options: object
     this.options = options
+    this.defaultOptions = {
+      notFoundMsg: notFoundDefaultMsg,
+      notFoundStatusCode: 404,
+      pre: (query) => query,
+      post: (doc) => doc,
+      notFoundErr: true,
+    }
+    this.chosenOptions = getChosenOptions(this.defaultOptions, this.options)
   }
   method = async (query, options) => {
-    // @param query: mongooseQuery
+    // @param query: function
     // @param options: object
     // getting the parameters values
     const queryValue = await getValue(query)
-    // working with the options -----
-    const chosenOptions = {}
-    const defaultOptions = {
-      notFoundErr: true,
-      notFoundMsg: notFoundDefaultMsg,
-      notFoundStatusCode: 404,
-    }
-    _.merge(chosenOptions, defaultOptions, this.options, options)
-    // working with the main code -----
-    const dbRes = await queryValue
-    if (checkTypes.isUndefined(dbRes) && chosenOptions.notFoundErr)
-      throw new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode)
-    else return dbRes
+    const chosenOptions = getChosenOptions(this.chosenOptions, options)
+    // & pre query hook -----
+    const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
+    const dbRes = await preQuery
+    if (!dbRes && chosenOptions.notFoundErr) throw new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode)
+    // & post doc hook -----
+    const postDoc = (await chosenOptions.post(dbRes)) || dbRes
+    return postDoc
   }
 }
 
 class SetDocMw {
-  constructor(options = {}) {
+  constructor(options) {
+    // @param options: object
     this.options = options
+    this.defaultOptions = {
+      notFoundMsg: notFoundDefaultMsg,
+      ifSinglePropName: 'mainDoc',
+      ifMultiPropName: 'mainDocs',
+      handleNotFoundErr: true,
+      notFoundStatusCode: 404,
+      pre: (query) => query,
+      propName: undefined,
+      post: (doc) => doc,
+      notFoundErr: true,
+      callNext: true,
+    }
+    this.chosenOptions = getChosenOptions(this.defaultOptions, this.options)
   }
   method = (query, options) => {
     // @param query: function
@@ -47,30 +65,16 @@ class SetDocMw {
       // getting parameter values
       const queryValue = await getValue(query, req)
       const optionsValue = await getValue(options, req)
-      // working with the options -----
-      const chosenOptions = {}
-      const defaultOptions = {
-        notFoundErr: true,
-        notFoundMsg: notFoundDefaultMsg,
-        notFoundStatusCode: 404,
-        post: (doc) => doc,
-        handleNotFoundError: true,
-        callNext: true,
-        propName: undefined,
-        ifSinglePropName: 'mainDoc',
-        ifMultiPropName: 'mainDocs',
-      }
-      _.merge(chosenOptions, defaultOptions, this.options, optionsValue)
-      // working with the main code -----
-      const dbRes = await queryValue
-
-      if (checkTypes.isNull(dbRes) && chosenOptions.notFoundErr) {
-        if (chosenOptions.handleNotFoundError) return sendRes(chosenOptions.notFoundStatusCode, res, { message: chosenOptions.notFoundMsg })
+      const chosenOptions = getChosenOptions(this.chosenOptions, optionsValue)
+      // & pre query hook -----
+      const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
+      const dbRes = await preQuery
+      if (!dbRes && chosenOptions.notFoundErr) {
+        if (chosenOptions.handleNotFoundErr) return sendRes(chosenOptions.notFoundStatusCode, res, { message: chosenOptions.notFoundMsg })
         else return next(new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode))
       }
-
-      const postDoc = await chosenOptions.post(dbRes)
-
+      // & post doc hook -----
+      const postDoc = (await chosenOptions.post(dbRes)) || dbRes
       if (chosenOptions.propName) req[chosenOptions.propName] = postDoc
       else {
         if (checkTypes.isArray(postDoc)) req[chosenOptions.ifMultiPropName] = postDoc
@@ -82,38 +86,40 @@ class SetDocMw {
 }
 
 class SendDocMw {
-  constructor(options = {}) {
+  constructor(options) {
+    // @param options: object
     this.options = options
+    this.defaultOptions = {
+      resBody: (doc) => (checkTypes.isArray(doc) ? { $$data: doc } : { data: doc }),
+      notFoundMsg: notFoundDefaultMsg,
+      notFoundStatusCode: 404,
+      handleNotFoundErr: true,
+      pre: (query) => query,
+      post: (doc) => doc,
+      sendRes: undefined,
+      notFoundErr: true,
+      callNext: false,
+      statusCode: 200,
+    }
+    this.chosenOptions = getChosenOptions(this.defaultOptions, this.options)
   }
   method = (query, options) => {
-    // @param query: mongooseQuery
+    // @param query: function
     // @param options: object
-    // getting the parameters values
     return expressAsyncHandler(async (req, res, next) => {
+      // getting the parameters values
       const queryValue = await getValue(query, req)
-      // working with the options -----
-      const chosenOptions = {}
-      const defaultOptions = {
-        notFoundMsg: notFoundDefaultMsg,
-        notFoundStatusCode: 404,
-        notFoundErr: true,
-        post: (doc) => doc,
-        handleNotFoundError: true,
-        callNext: false,
-        statusCode: 200,
-        response: (doc) => (checkTypes.isArray(doc) ? { $$data: doc } : { data: doc }),
-        sendRes: {},
-      }
-      _.merge(chosenOptions, defaultOptions, this.options, options)
-      // working with the main code -----
-      const dbRes = await queryValue
-      if (checkTypes.isNull(dbRes) && chosenOptions.notFoundErr) {
-        if (chosenOptions.handleNotFoundError) return sendRes(chosenOptions.notFoundStatusCode, res, { message: chosenOptions.notFoundMsg })
+      const chosenOptions = getChosenOptions(this.chosenOptions, options)
+      // & pre query hook -----
+      const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
+      const dbRes = await preQuery
+      if (!dbRes && chosenOptions.notFoundErr) {
+        if (chosenOptions.handleNotFoundErr) return sendRes(chosenOptions.notFoundStatusCode, res, { message: chosenOptions.notFoundMsg })
         else return next(new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode))
       }
-
-      const postDoc = await chosenOptions.post(dbRes)
-      sendRes(chosenOptions.statusCode, res, chosenOptions.response(postDoc), chosenOptions.sendRes)
+      // & post doc hook -----
+      const postDoc = (await chosenOptions.post(dbRes)) || dbRes
+      sendRes(chosenOptions.statusCode, res, chosenOptions.resBody(postDoc), chosenOptions.sendRes)
       if (chosenOptions.callNext) next()
     })
   }
