@@ -1,12 +1,12 @@
 /*=============================================
 =            importing dependencies            =
 =============================================*/
-const express = require('express')
 const log = require('@samislam/log')
+const express = require('express')
+const mongoose = require('mongoose')
+const { UserModel } = require('./mongoose_models')
 const expressAsyncHandler = require('express-async-handler')
 const { sendRes, sendResMw } = require('@samislam/sendres')
-const { UserModel } = require('./mongoose_models')
-const { default: mongoose } = require('mongoose')
 const { setDoc, setDocMw, sendDocMw, SetDoc, SetDocMw, SendDocMw } = require('./../src')
 /*=====  End of importing dependencies  ======*/
 
@@ -27,7 +27,18 @@ router
     setDocMw((req) => UserModel.create(req.body)),
     sendResMw(201, (req) => ({ data: req.mainDoc }))
   )
-  .get(sendDocMw(() => UserModel.find()))
+  .get(
+    sendDocMw(
+      async () => {
+        return UserModel.find()
+      },
+      {
+        pre(query) {
+          console.log(query)
+        },
+      }
+    )
+  )
 
 router
   .route('/:id')

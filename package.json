@@ -1,6 +1,6 @@
 {
   "name": "setdoc",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "setDoc is a small and simple utility for querying your database with Mongoose.",
   "main": "./src/index.js",
   "scripts": {
@@ -41,8 +41,7 @@
     "express": "^4.18.1",
     "express-async-handler": "^1.2.0",
     "lodash": "^4.17.21",
-    "mmhf": "^1.2.0",
-    "mongoose": "^6.4.4"
+    "mongoose": "^6.5.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.19"

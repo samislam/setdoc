@@ -28,7 +28,7 @@ class SetDoc {
     // @param query: function
     // @param options: object
     // getting the parameters values
-    const queryValue = await getValue(query)
+    const queryValue = query()
     const chosenOptions = getChosenOptions(this.chosenOptions, options)
     // & pre query hook -----
     const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
@@ -64,7 +64,7 @@ class SetDocMw {
     // @param options: function | obj
     return expressAsyncHandler(async (req, res, next) => {
       // getting parameter values
-      const queryValue = await getValue(query, req)
+      const queryValue = query(req)
       const optionsValue = await getValue(options, req)
       const chosenOptions = getChosenOptions(this.chosenOptions, optionsValue)
       // & pre query hook -----
@@ -106,12 +106,13 @@ class SendDocMw {
     this.chosenOptions = getChosenOptions(this.defaultOptions, this.options)
   }
   method = (query, options) => {
-    // @param query: function
+    // @param query: function (not async)
     // @param options: object
     return expressAsyncHandler(async (req, res, next) => {
       // getting the parameters values
-      const queryValue = await getValue(query, req)
-      const chosenOptions = getChosenOptions(this.chosenOptions, options)
+      const queryValue = query(req)
+      const optionsValue = await getValue(options, req)
+      const chosenOptions = getChosenOptions(this.chosenOptions, optionsValue)
       // & pre query hook -----
       const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
       const dbRes = await preQuery
