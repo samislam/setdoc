@@ -7,6 +7,7 @@ const { sendRes } = require('@samislam/sendres')
 const NotFoundError = require('./utils/NotFoundError')
 const getChosenOptions = require('./utils/getChosenOptions')
 const expressAsyncHandler = require('express-async-handler')
+const { default: mongoose } = require('mongoose')
 /*=====  End of importing dependencies  ======*/
 
 const notFoundDefaultMsg = 'The resource you requested was not found'
@@ -28,14 +29,18 @@ class SetDoc {
     // @param query: function
     // @param options: object
     // getting the parameters values
-    const queryValue = query()
+    let queryValue
+    const setQuery = (query) => {
+      queryValue = query
+    }
+    await query(setQuery)
     const chosenOptions = getChosenOptions(this.chosenOptions, options)
     // & pre query hook -----
-    const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
-    const dbRes = await preQuery
+    chosenOptions.pre(queryValue)
+    const dbRes = await queryValue
     if (!dbRes && chosenOptions.notFoundErr) throw new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode)
     // & post doc hook -----
-    let postDoc = await chosenOptions.post(dbRes)
+    let postDoc = chosenOptions.post(dbRes)
     postDoc = checkTypes.isUndefined(postDoc) ? dbRes : postDoc
     return postDoc
   }
@@ -64,18 +69,22 @@ class SetDocMw {
     // @param options: function | obj
     return expressAsyncHandler(async (req, res, next) => {
       // getting parameter values
-      const queryValue = query(req)
+      let queryValue
+      const setQuery = (query) => {
+        queryValue = query
+      }
+      await query(setQuery, req)
       const optionsValue = await getValue(options, req)
       const chosenOptions = getChosenOptions(this.chosenOptions, optionsValue)
       // & pre query hook -----
-      const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
-      const dbRes = await preQuery
+      chosenOptions.pre(queryValue)
+      const dbRes = await queryValue
       if (!dbRes && chosenOptions.notFoundErr) {
         if (chosenOptions.handleNotFoundErr) return sendRes(chosenOptions.notFoundStatusCode, res, { message: chosenOptions.notFoundMsg })
         else return next(new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode))
       }
       // & post doc hook -----
-      let postDoc = await chosenOptions.post(dbRes)
+      let postDoc = chosenOptions.post(dbRes)
       postDoc = checkTypes.isUndefined(postDoc) ? dbRes : postDoc
       if (chosenOptions.propName) req[chosenOptions.propName] = postDoc
       else {
@@ -96,7 +105,7 @@ class SendDocMw {
       notFoundMsg: notFoundDefaultMsg,
       notFoundStatusCode: 404,
       handleNotFoundErr: true,
-      pre: (query) => query,
+      pre: async (query) => query,
       post: (doc) => doc,
       sendRes: undefined,
       notFoundErr: true,
@@ -110,18 +119,23 @@ class SendDocMw {
     // @param options: object
     return expressAsyncHandler(async (req, res, next) => {
       // getting the parameters values
-      const queryValue = query(req)
+      let queryValue
+      const setQuery = (query) => {
+        queryValue = query
+      }
+      await query(setQuery, req)
       const optionsValue = await getValue(options, req)
       const chosenOptions = getChosenOptions(this.chosenOptions, optionsValue)
       // & pre query hook -----
-      const preQuery = (await chosenOptions.pre(queryValue)) || queryValue
-      const dbRes = await preQuery
+      chosenOptions.pre(queryValue)
+      const dbRes = await queryValue
       if (!dbRes && chosenOptions.notFoundErr) {
         if (chosenOptions.handleNotFoundErr) return sendRes(chosenOptions.notFoundStatusCode, res, { message: chosenOptions.notFoundMsg })
         else return next(new NotFoundError(chosenOptions.notFoundMsg, chosenOptions.notFoundStatusCode))
       }
+
       // & post doc hook -----
-      let postDoc = await chosenOptions.post(dbRes)
+      let postDoc = chosenOptions.post(dbRes)
       postDoc = checkTypes.isUndefined(postDoc) ? dbRes : postDoc
       sendRes(chosenOptions.statusCode, res, chosenOptions.resBody(postDoc), chosenOptions.sendRes)
       if (chosenOptions.callNext) next()
