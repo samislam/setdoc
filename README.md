@@ -132,10 +132,10 @@ a JavaScript function, queries your database, then returns the resolved value of
 
 <ins>parameters:</ins>
 
-- **query**: _function_, ex: `((setQuery)=>setQuery(UserModel.find())`.
+- **query**: _function_, ex: `setDoc((req)=>UserModel.find())`.
   - it's important to point out that you must leave the query as it is without awaiting it, awaiting it is the job of **setDoc** itself.
-  - Your function will be called with one argument, the `setQuery` function.
-  - Your function must call the `setQuery` function with your mongoose query, ex: `(setQuery)=> setQuery(UserModel.findById(req.params.id))`.
+  - Your function will be called without arguments.
+  - Your function must return a mongoose query.
 - **options**: _object_, options to configure how setDoc works.
   - **notFoundErr**: _boolean_, throw an error when the database query returns undefined (default: **true**).
     - a _not found document_ is only considered not found if they query returned undefined.
@@ -148,10 +148,10 @@ an ExpressJs middleware, queries your database, then sets the resolved value of 
 
 <ins>parameters:</ins>
 
-- **query:** *function*, ex: `((setQuery, req)=>setQuery()UserModel.find()`.
+- **query:** *function*, ex: `setDocMw((req)=>UserModel.find())`.
   - it's important to point out that you must leave the query as it is without awaiting it, awaiting it is the job of **setDoc** itself.
-  - Your function will be called with two arguments, the `setQuery` function and the express `req` object.
-  - Your function must call the `setQuery` function with your mongoose query, ex: `(setQuery, req)=> setQuery(UserModel.findById(req.params.id))`.
+  - Your function will be called with the express `req` object as the first argument.
+  - Your function must return a mongoose query.
 - **options:** *object |* _function_, options to configure how setDocMw works.
   - If you provided a function, your function will be called with the `req` object.
   - Your function must return an object, ex: `(req) => ({ options-here })`.
@@ -162,9 +162,6 @@ an ExpressJs middleware, queries your database, then sets the resolved value of 
     - **handleNotFoundError**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
     - **callNext**: _boolean_,call `next()` as the last step.
       - set to **true** only if you have middlewares to execute after this one.
-    - **post**: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ the querying the database and verifying weather the resource was found or not.
-      - This function gets called with the resolved value of the query.
-      - This method is pretty useful when you want to _transform_ the database response.
     - **propName**: _string_, the property name to set on the request object (default: **undefined**).
       - if this property is set, the options _ifSinglePropName_ and _ifMultiPropName_ will be ignored.
     - **ifSinglePropName**: _string_, the property name to set on the request object if the resolved value of the query wasn't an array (default : '**mainDoc**').
@@ -176,11 +173,11 @@ an ExpressJs middleware, queries your database, then sends the resolved value of
 
 <ins>parameters:</ins>
 
-- **query:** *function*, ex: `((setQuery, req)=> setQuery(UserModel.findById(req.params.id)`).
+- **query:** *function*, ex: `sendDocMw((req)=>UserModel.findById(req.params.id))`.
 
   - it's important to point out that you must leave the query as it is without awaiting it, awaiting it is the job of **setDoc** itself.
-  - Your function will be called with two arguments, the `setQuery` function and the express `req` object.
-  - Your function must call the `setQuery` function with your mongoose query, ex: `(setQuery, req)=> setQuery(UserModel.findById(req.params.id))`.
+  - Your function will be called with the express `req` object as the first argument.
+  - Your function must return a mongoose query.
 
 - **options:** *object |* _function_, options to configure how setDocMw works.
   - If you provided a function, your function will be called with the `req` object.
@@ -192,66 +189,9 @@ an ExpressJs middleware, queries your database, then sends the resolved value of
     - **handleNotFoundError**: _boolean_, send the meaningful response if a requested document wasn't found, if set to false, `next()` is called with a *setDocNotFoundError* error (default: **true**).
     - **callNext**: _boolean_,call `next()` as the last step.
       - set to **true** only if you have middlewares to execute after this one.
-    - **post**: _function_, a post hook (i.e. a function, aka. life-time method) to be executed _after_ the querying the database and verifying weather the resource was found or not.
-      - This function gets called with the resolved value of the query.
-      - This method is pretty useful when you want to _transform_ the database response.
     - **statusCode**: _number_, the status code for the response on the success of the operation (default **200**).
-    - **response**: _function_, a function that gets called with the return value of your _post hook_, if you're not specifying a _post hook_, it will be called with the resolved value of the database query.
+    - **resBody**: _function_, a function that gets called with the resolved value of the database query, in this function, you must return an object, this object is what your response body is going to hold.
     - **sendRes**: _object_, the options you want to pass to the sendRes package, for these options, read them on the official docs of [sendRes](https://www.npmjs.com/package/@samislam/sendres).
-
-# `SetDoc`, `SetDocMw` and `SendDocMw` classes
-
-These are the constructor classes for every setDoc method, you can use these classes to generate a set of methods options with pre-defined options, and the best way to describe this process is by showing you an example:
-
-```js
-const express = require('express')
-const expressAsyncHandler = require('express-async-handler')
-const app = express()
-const { SetDoc, SetDocMw, SendDocMw } = require('setDoc')
-const { UserModel } = require('./models/UserModel')
-
-app.use(express.json())
-
-const customSetDoc = new SetDoc({
-  notFoundMsg: 'Entschuldigung, aber der angeforderte Datensatz wurde nicht gefunden!',
-  notFoundStatusCode: 500,
-}).method
-const customSetDocMw = new SetDocMw({
-  notFoundMsg: 'üzgünüm, ancak istenen kayıt bulunamadı!',
-}).method
-const customSendDocMw = new SendDocMw({
-  notFoundMsg: 'prepáčte, ale požadovaný záznam sa nenašiel!',
-}).method
-
-app.route('/api/users').get(
-  customSetDocMw((req) => UserModel.find({}, { propName: 'docs' })),
-  (req, res, next) => {
-    res.status(200).json({ data: req.docs })
-  }
-)
-app
-  .route('/api/users/:id')
-  .get(customSendDocMw((req) => UserModel.findById(req.params.id)))
-  .patch(
-    expressAsyncHandler(async (req, res, next) => {
-      const doc = await customSetDoc(() => UserModel.findByIdAndUpdate(req.params.id, req.body))
-      res.status(200).json({
-        data: doc,
-      })
-    })
-  )
-app.use((err, req, res, next) => {
-  if (err.name === 'setDocNotFoundError') {
-    res.status(err.statusCode).json({
-      message: err.message,
-    })
-  }
-})
-app.listen(3000, () => console.log('listening on port 3000...'))
-```
-
-- All the constructors accept only one argument as an _object_, the **options** parameter.
-- You can find the available options for each class in the API section above.
 
 # Error Handling: 🍅
 

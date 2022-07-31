@@ -1,30 +1,25 @@
 /*=============================================
 =            importing dependencies            =
 =============================================*/
-const log = require('@samislam/log')
 const express = require('express')
-const mongoose = require('mongoose')
+const frameworkStuff = require('./utils/frameworkStuff')
 /*=====  End of importing dependencies  ======*/
 
 const app = express()
 app.use(express.json())
 
-app.use('/tests', require('./workspace/sendDocMw'))
+app.use('/setDocTests', require('./setDocTests'))
+app.use('/setDocMwTests', require('./setDocMwTests'))
+app.use('/sendDocMwTests', require('./sendDocMwTests'))
 
-/*=============================================
-=            framework stuff            =
-=============================================*/
+app.use((err, req, res, next) => {
+  console.log('global error handling middleware caught an error')
+  if (err.name === 'setDocNotFoundError') {
+    res.status(err.statusCode).json({ status: 'error', message: err.message })
+  } else {
+    res.end('internal server error, read the console for details')
+    console.error(err)
+  }
+})
 
-console.clear()
-
-function main() {
-  log.info(log.label, 'connecting to the databsae...')
-  mongoose.connect('mongodb://localhost:27017/tests').then(() => {
-    log.success(log.label, 'successfully connected to database')
-    log.info(log.label, 'starting the http service...')
-    app.listen(9977, () => log.info(log.label, 'Test running on port 9977...'))
-  })
-}
-main()
-
-/*=====  End of framework stuff  ======*/
+frameworkStuff(app)
